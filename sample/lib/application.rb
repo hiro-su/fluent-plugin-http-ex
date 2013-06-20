@@ -17,17 +17,17 @@ module HttpInputEX
       @json_file = File.join(json_file)
     end
 
-    def json
-      @http.post("/test.http-ex.json", "json=#{@json}")
+    def json path
+      @http.post(path, "json=#{@json}")
     end
 
-    def json_chunk
+    def json_chunk path
       records = [@json, @json, @json]
-      @http.post("/test.http-ex.json-chunk", "json-chunk=#{records}")
+      @http.post(path, "json-chunk=#{records}")
     end
 
-    def json_stream
-      req = Net::HTTP::Post.new("/test.http-ex.json-stream")
+    def json_stream path
+      req = Net::HTTP::Post.new(path)
       req[ "Content-Type" ] = 'application/x-json-stream'
       req[ "Transfer-Encoding" ] = "chunked"
       File.open(@json_file) do |io|
@@ -36,19 +36,19 @@ module HttpInputEX
       end
     end
 
-    def msgpack
+    def msgpack path
       record_m = @record.to_msgpack
-      @http.post("/test.http-ex.msgpack", "msgpack=#{record_m}")
+      @http.post(path, "msgpack=#{record_m}")
     end
 
-    def msgpack_chunk
+    def msgpack_chunk path
       records = [@record, @record, @record]
       records_m = records.to_msgpack
-      @http.post("/test.http-ex.msgpack-chunk", "msgpack-chunk=#{records_m}")
+      @http.post(path, "msgpack-chunk=#{records_m}")
     end
 
-    def msgpack_stream
-      req = Net::HTTP::Post.new("/test.http-ex.msgpack-stream")
+    def msgpack_stream path
+      req = Net::HTTP::Post.new(path)
       req[ "Content-Type" ] = 'application/x-msgpack-stream'
       req[ "Transfer-Encoding" ] = "chunked"
       io = StringIO.new

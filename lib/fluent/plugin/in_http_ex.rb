@@ -69,12 +69,16 @@ module Fluent
               Engine.emit(tag, time, JSON.parse(line))
             end
           end
-        elsif params['msgpack-chunk'] || params['json-chunk']
+        elsif params['msgpack-chunk'] 
           record.each do |v|
-            Engine.emit(tag, time, JSON.parse(v))
+            Engine.emit(tag, time, v)
           end
         elsif params['json-stream']
           record = record.split("\n")
+          record.each do |v|
+            Engine.emit(tag, time, JSON.parse(v))
+          end
+        elsif params['json-chunk']
           record.each do |v|
             Engine.emit(tag, time, JSON.parse(v))
           end
