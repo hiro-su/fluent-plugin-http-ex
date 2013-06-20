@@ -29,16 +29,7 @@ module Fluent
         path = path_info[1..-1] # remove /
         tag = path.split('/').join('.')
 
-        if msgpack_stream = params['msgpack-stream']
-          record = msgpack_stream
-
-        elsif msgpack_chunk = params['msgpack-chunk']
-          record = MessagePack::unpack(msgpack_chunk)
-
-        elsif msgpack = params['msgpack']
-          record = MessagePack::unpack(msgpack)
-
-        elsif js = params['json']
+        if js = params['json']
           record = JSON.parse(js)
 
         elsif js_chunk = params['json-chunk']
@@ -46,6 +37,15 @@ module Fluent
 
         elsif js_stream = params['json-stream']
           record = js_stream
+
+        elsif msgpack = params['msgpack']
+          record = MessagePack::unpack(msgpack)
+
+        elsif msgpack_chunk = params['msgpack-chunk']
+          record = MessagePack::unpack(msgpack_chunk)
+
+        elsif msgpack_stream = params['msgpack-stream']
+          record = msgpack_stream
 
         else
           raise "'json' or 'msgpack' parameter is required"
@@ -99,25 +99,7 @@ module Fluent
         @env['REMOTE_ADDR'] = @remote_addr
 
         params = WEBrick::HTTPUtils.parse_query(@parser.query_string)
-
-        if @content_type =~ /^application\/x-www-form-urlencoded/
-          params.update WEBrick::HTTPUtils.parse_query(@body)
-        elsif @content_type =~ /^multipart\/form-data; boundary=(.+)/
-          boundary = WEBrick::HTTPUtils.dequote($1)
-          params.update WEBrick::HTTPUtils.parse_form_data(@body, boundary)
-        elsif @content_type =~ /^application\/json/
-          params['json'] = @body
-        elsif @content_type =~ /^application\/x-json-chunk$/
-          params['json-chunk'] = @body
-        elsif @content_type =~ /^application\/x-json-stream$/
-          params['json-stream'] = @body
-        elsif @content_type =~ /^application\/x-msgpack$/
-          params['msgpack'] = @body
-        elsif @content_type =~ /^application\/x-msgpack-stream$/
-          params['msgpack-stream'] = @body
-        elsif @content_type =~ /^application\/x-msgpack-chunk$/
-          params['msgpack-chunk'] = @body
-        end
+        params = check_content_type(params, @content_type, @body)
         path_info = @parser.request_path
 
         params.merge!(@env)
@@ -132,6 +114,28 @@ module Fluent
         else
           send_response_and_close(code, header, body)
         end
+      end
+
+      def check_content_type(params, content_type, body)
+        if content_type =~ /^application\/x-www-form-urlencoded/
+          params.update WEBrick::HTTPUtils.parse_query(body)
+        elsif content_type =~ /^multipart\/form-data; boundary=(.+)/
+          boundary = WEBrick::HTTPUtils.dequote($1)
+          params.update WEBrick::HTTPUtils.parse_form_data(body, boundary)
+        elsif content_type =~ /^application\/json/
+          params['json'] = body
+        elsif content_type =~ /^application\/x-json-chunk$/
+          params['json-chunk'] = body
+        elsif content_type =~ /^application\/x-json-stream$/
+          params['json-stream'] = body
+        elsif content_type =~ /^application\/x-msgpack$/
+          params['msgpack'] = body
+        elsif content_type =~ /^application\/x-msgpack-chunk$/
+          params['msgpack-chunk'] = body
+        elsif content_type =~ /^application\/x-msgpack-stream$/
+          params['msgpack-stream'] = body
+        end
+        params
       end
     end
   end
