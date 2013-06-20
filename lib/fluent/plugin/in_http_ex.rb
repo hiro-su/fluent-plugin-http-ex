@@ -65,16 +65,18 @@ module Fluent
       begin
         if params['msgpack-stream']
           msgpack_each(record) do |v|
-            v.each {|line| Engine.emit(tag, time, line) }
+            v.each do |line|
+              Engine.emit(tag, time, JSON.parse(line))
+            end
           end
         elsif params['msgpack-chunk'] || params['json-chunk']
           record.each do |v|
-            Engine.emit(tag, time, v)
+            Engine.emit(tag, time, JSON.parse(v))
           end
         elsif params['json-stream']
           record = record.split("\n")
           record.each do |v|
-            Engine.emit(tag, time, v)
+            Engine.emit(tag, time, JSON.parse(v))
           end
         else
           Engine.emit(tag, time, record)
