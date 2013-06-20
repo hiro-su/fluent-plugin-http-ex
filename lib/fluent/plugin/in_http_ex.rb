@@ -29,14 +29,23 @@ module Fluent
         path = path_info[1..-1] # remove /
         tag = path.split('/').join('.')
 
-        if msgpack_chunk = params['msgpack_chunk']
-          record = msgpack_chunk
+        if msgpack_stream = params['msgpack-stream']
+          record = msgpack_stream
+
+        elsif msgpack_chunk = params['msgpack-chunk']
+          record = MessagePack::unpack(msgpack_chunk)
 
         elsif msgpack = params['msgpack']
           record = MessagePack::unpack(msgpack)
 
         elsif js = params['json']
           record = JSON.parse(js)
+
+        elsif js_chunk = params['json-chunk']
+          record = JSON.parse(js_chunk)
+
+        elsif js_stream = params['json-stream']
+          record = js_stream
 
         else
           raise "'json' or 'msgpack' parameter is required"
@@ -54,9 +63,18 @@ module Fluent
 
       # TODO server error
       begin
-        if params['msgpack_chunk']
+        if params['msgpack-stream']
           msgpack_each(record) do |v|
             v.each {|line| Engine.emit(tag, time, line) }
+          end
+        elsif params['msgpack-chunk'] || params['json-chunk']
+          record.each do |v|
+            Engine.emit(tag, time, v)
+          end
+        elsif params['json-stream']
+          record = record.split("\n")
+          record.each do |v|
+            Engine.emit(tag, time, v)
           end
         else
           Engine.emit(tag, time, record)
@@ -89,10 +107,16 @@ module Fluent
           params.update WEBrick::HTTPUtils.parse_form_data(@body, boundary)
         elsif @content_type =~ /^application\/json/
           params['json'] = @body
-        elsif @content_type =~ /^application\/msgpack/
+        elsif @content_type =~ /^application\/x-json-chunk$/
+          params['json-chunk'] = @body
+        elsif @content_type =~ /^application\/x-json-stream$/
+          params['json-stream'] = @body
+        elsif @content_type =~ /^application\/x-msgpack$/
           params['msgpack'] = @body
-        elsif @content_type =~ /^application\/x-msgpack/
-          params['msgpack_chunk'] = @body
+        elsif @content_type =~ /^application\/x-msgpack-stream$/
+          params['msgpack-stream'] = @body
+        elsif @content_type =~ /^application\/x-msgpack-chunk$/
+          params['msgpack-chunk'] = @body
         end
         path_info = @parser.request_path
 
