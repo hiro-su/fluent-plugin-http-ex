@@ -33,7 +33,7 @@ module Fluent
           record = msgpack_chunk
 
         elsif msgpack = params['msgpack']
-          record = MessagePack;;unpack(msgpack)
+          record = MessagePack::unpack(msgpack)
 
         elsif js = params['json']
           record = JSON.parse(js)
