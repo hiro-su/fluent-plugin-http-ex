@@ -1,5 +1,5 @@
 module Fluent
-  class HttpInputEx < HttpInput
+  class ExHttpInput < HttpInput
     Plugin.register_input('http_ex', self)
 
     config_param :port, :integer, :default => 9880
@@ -14,7 +14,7 @@ module Fluent
       detach_multi_process do
         Input.new.start
         @km = KeepaliveManager.new(@keepalive_timeout)
-        @lsock = Coolio::TCPServer.new(lsock, nil, HandlerEX, @km, method(:on_request), @body_size_limit)
+        @lsock = Coolio::TCPServer.new(lsock, nil, ExHandler, @km, method(:on_request), @body_size_limit)
 
         @loop = Coolio::Loop.new
         @loop.attach(@km)
@@ -25,6 +25,7 @@ module Fluent
     end
 
     def on_request(path_info, params)
+      $log.debug "#{params["REMOTE_ADDR"]}, path_info: #{path_info}"
       begin
         path = path_info[1..-1] # remove /
         tag = path.split('/').join('.')
@@ -98,7 +99,7 @@ module Fluent
       yield u
     end
 
-    class HandlerEX < Handler
+    class ExHandler < Handler
       def on_message_complete
         return if closing?
 
