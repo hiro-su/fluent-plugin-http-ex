@@ -33,20 +33,20 @@ module Fluent
         if js = params['json']
           record = JSON.parse(js)
 
-        elsif js_chunk = params['json-chunk']
-          record = JSON.parse(js_chunk)
+        elsif js_list = params['json-list']
+          record = JSON.parse(js_list)
 
-        elsif js_stream = params['json-stream']
-          record = js_stream
+        elsif js_chunk = params['json-chunk']
+          record = js_chunk
 
         elsif msgpack = params['msgpack']
           record = MessagePack::unpack(msgpack)
 
-        elsif msgpack_chunk = params['msgpack-chunk']
-          record = MessagePack::unpack(msgpack_chunk)
+        elsif msgpack_list = params['msgpack-list']
+          record = MessagePack::unpack(msgpack_list)
 
-        elsif msgpack_stream = params['msgpack-stream']
-          record = msgpack_stream
+        elsif msgpack_chunk = params['msgpack-chunk']
+          record = msgpack_chunk
 
         else
           raise "'json' or 'msgpack' parameter is required"
@@ -64,22 +64,22 @@ module Fluent
 
       # TODO server error
       begin
-        if params['msgpack-stream']
+        if params['msgpack-chunk']
           msgpack_each(record) do |v|
             v.each do |line|
               Engine.emit(tag, time, JSON.parse(line))
             end
           end
-        elsif params['msgpack-chunk'] 
+        elsif params['msgpack-list'] 
           record.each do |v|
             Engine.emit(tag, time, v)
           end
-        elsif params['json-stream']
+        elsif params['json-chunk']
           record = record.split("\n")
           record.each do |v|
             Engine.emit(tag, time, JSON.parse(v))
           end
-        elsif params['json-chunk']
+        elsif params['json-list']
           record.each do |v|
             Engine.emit(tag, time, JSON.parse(v))
           end
@@ -130,17 +130,9 @@ module Fluent
           boundary = WEBrick::HTTPUtils.dequote($1)
           params.update WEBrick::HTTPUtils.parse_form_data(body, boundary)
         elsif content_type =~ /^application\/json/
-          params['json'] = body
-        elsif content_type =~ /^application\/x-json-chunk$/
           params['json-chunk'] = body
-        elsif content_type =~ /^application\/x-json-stream$/
-          params['json-stream'] = body
         elsif content_type =~ /^application\/x-msgpack$/
-          params['msgpack'] = body
-        elsif content_type =~ /^application\/x-msgpack-chunk$/
           params['msgpack-chunk'] = body
-        elsif content_type =~ /^application\/x-msgpack-stream$/
-          params['msgpack-stream'] = body
         end
         params
       end

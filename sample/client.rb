@@ -6,9 +6,9 @@ app = HttpInputEX::Application.new(
 )
 # json
 app.json '/test.http-ex.json'
+app.json_list '/test.http-ex.json-list'
 app.json_chunk '/test.http-ex.json-chunk'
-app.json_stream '/test.http-ex.json-stream'
 # msgpack
 app.msgpack '/test.http-ex.msgpack'
+app.msgpack_list '/test.http-ex.msgpack-list'
 app.msgpack_chunk '/test.http-ex.msgpack-chunk'
-app.msgpack_stream '/test.http-ex.msgpack-stream'

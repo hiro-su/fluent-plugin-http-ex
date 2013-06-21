@@ -12,23 +12,23 @@ module HttpInputEX
     end
 
     def configure(json_file)
-      @json = '{"id":123,"name":"foo"}'
-      @record = JSON.parse(@json)
       @json_file = File.join(json_file)
+      @json = File.open(@json_file) {|f| f.gets.chomp }
+      @record = JSON.parse(@json)
     end
 
     def json path
-      @http.post(path, "json=#{@json}")
+      @http.post(path, %Q(json=#{@json}))
+    end
+
+    def json_list path
+      records = [@json, @json, @json]
+      @http.post(path, %Q(json-list=#{records}"))
     end
 
     def json_chunk path
-      records = [@json, @json, @json]
-      @http.post(path, "json-chunk=#{records}")
-    end
-
-    def json_stream path
       req = Net::HTTP::Post.new(path)
-      req[ "Content-Type" ] = 'application/x-json-stream'
+      req[ "Content-Type" ] = 'application/json'
       req[ "Transfer-Encoding" ] = "chunked"
       File.open(@json_file) do |io|
         req.body_stream = io
@@ -38,18 +38,18 @@ module HttpInputEX
 
     def msgpack path
       record_m = @record.to_msgpack
-      @http.post(path, "msgpack=#{record_m}")
+      @http.post(path, %Q(msgpack=#{record_m}))
+    end
+
+    def msgpack_list path
+      records = [@record, @record, @record]
+      records_m = records.to_msgpack
+      @http.post(path, %Q(msgpack-list=#{records_m}))
     end
 
     def msgpack_chunk path
-      records = [@record, @record, @record]
-      records_m = records.to_msgpack
-      @http.post(path, "msgpack-chunk=#{records_m}")
-    end
-
-    def msgpack_stream path
       req = Net::HTTP::Post.new(path)
-      req[ "Content-Type" ] = 'application/x-msgpack-stream'
+      req[ "Content-Type" ] = 'application/x-msgpack'
       req[ "Transfer-Encoding" ] = "chunked"
       io = StringIO.new
       File.open(@json_file) do |f| 
