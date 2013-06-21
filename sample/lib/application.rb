@@ -23,7 +23,7 @@ module HttpInputEX
 
     def json_list path
       records = [@json, @json, @json]
-      @http.post(path, %Q(json-list=#{records}"))
+      @http.post(path, %Q(json-list=#{records}))
     end
 
     def json_chunk path
@@ -54,7 +54,7 @@ module HttpInputEX
       io = StringIO.new
       File.open(@json_file) do |f| 
         while line = f.gets
-          io << line.chomp.to_msgpack
+          io << JSON.parse(line.chomp).to_msgpack
         end
       end
       io.rewind

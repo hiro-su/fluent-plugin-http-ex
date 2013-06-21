@@ -34,19 +34,19 @@ module Fluent
           record = JSON.parse(js)
 
         elsif js_list = params['json-list']
-          record = JSON.parse(js_list)
+          records = JSON.parse(js_list)
 
         elsif js_chunk = params['json-chunk']
-          record = js_chunk
+          records = js_chunk
 
         elsif msgpack = params['msgpack']
           record = MessagePack::unpack(msgpack)
 
         elsif msgpack_list = params['msgpack-list']
-          record = MessagePack::unpack(msgpack_list)
+          records = MessagePack::unpack(msgpack_list)
 
         elsif msgpack_chunk = params['msgpack-chunk']
-          record = msgpack_chunk
+          records = msgpack_chunk
 
         else
           raise "'json' or 'msgpack' parameter is required"
@@ -65,23 +65,33 @@ module Fluent
       # TODO server error
       begin
         if params['msgpack-chunk']
-          msgpack_each(record) do |v|
+          msgpack_each(records) do |v|
             v.each do |line|
-              Engine.emit(tag, time, JSON.parse(line))
+              Engine.emit(tag, time, line)
             end
           end
         elsif params['msgpack-list'] 
-          record.each do |v|
+          records.each do |v|
             Engine.emit(tag, time, v)
           end
         elsif params['json-chunk']
-          record = record.split("\n")
-          record.each do |v|
-            Engine.emit(tag, time, JSON.parse(v))
+          records_a = records.split("\n")
+          records_a.each do |v|
+            line = begin
+              JSON.parse(v)
+            rescue TypeError
+              v #hash
+            end
+            Engine.emit(tag, time, line)
           end
         elsif params['json-list']
-          record.each do |v|
-            Engine.emit(tag, time, JSON.parse(v))
+          records.each do |v|
+            line = begin
+              JSON.parse(v)
+            rescue TypeError
+              v #hash
+            end
+            Engine.emit(tag, time, line)
           end
         else
           Engine.emit(tag, time, record)
