@@ -37,14 +37,14 @@ module HttpInputEX
     end
 
     def msgpack path
-      record_m = @record.to_msgpack
-      @http.post(path, %Q(msgpack=#{record_m}))
+      record_m = URI.encode_www_form({"msgpack" => @record.to_msgpack})
+      @http.post(path, record_m)
     end
 
     def msgpack_list path
       records = [@record, @record, @record]
-      records_m = records.to_msgpack
-      @http.post(path, %Q(msgpack-list=#{records_m}))
+      records_m = URI.encode_www_form({"msgpack-list" => records.to_msgpack})
+      @http.post(path, records_m)
     end
 
     def msgpack_chunk path
