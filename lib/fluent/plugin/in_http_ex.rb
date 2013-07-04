@@ -8,6 +8,37 @@ class ExHttpInput < HttpInput
   config_param :body_size_limit, :size, :default => 32*1024*1024
   config_param :keepalive_timeout, :time, :default => 30
 
+  class KeepaliveManager < Coolio::TimerWatcher
+    class TimerValue
+      def initialize
+        @value = 0
+      end
+      attr_accessor :value
+    end
+
+    def initialize(timeout)
+      super(1, true)
+      @cons = {}
+      @timeout = timeout.to_i
+    end
+
+    def add(sock)
+      @cons[sock] = sock
+    end
+
+    def delete(sock)
+      @cons.delete(sock)
+    end
+
+    def on_timer
+      @cons.each_pair {|sock,val|
+        if sock.step_idle > @timeout
+          sock.close unless @timeout == 0
+        end
+      }
+    end
+  end
+
   def start
     $log.debug "listening http on #{@bind}:#{@port}"
     lsock = TCPServer.new(@bind, @port)
