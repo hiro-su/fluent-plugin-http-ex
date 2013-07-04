@@ -4,11 +4,11 @@ require 'json'
 
 # usage: ruby chunk_test.rb msgpack
 class ChunkTest
-  def initialize
-    @host = "127.0.0.1"
-    @port = 8888
+  def initialize(host, port, mode)
+    @host = host
+    @port = port
     @cmd = "nc"
-    @mode = ARGV[0] || "msgpack"
+    @mode = mode || "msgpack"
     @term = false
   end
 
@@ -44,5 +44,3 @@ class ChunkTest
     end
   end
 end
-
-ChunkTest.new.run
