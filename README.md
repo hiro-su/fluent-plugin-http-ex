@@ -39,7 +39,8 @@ resource
 
 header
 
-    Content-type: applicatoin/x-www-form/urlencoded
+    Content-type: application/x-www-form-urlencoded
+
 
 body
 
@@ -58,7 +59,7 @@ resource
 
 header
 
-    Content-type: applicatoin/x-www-form/urlencoded
+    Content-type: application/x-www-form-urlencoded
 
 body
 
@@ -104,7 +105,7 @@ resource
 
 header
 
-    Content-type: applicatoin/x-www-form/urlencoded
+    Content-type: application/x-www-form-urlencoded
 
 body
 
@@ -119,7 +120,7 @@ resource
 
 header
 
-    Content-type: applicatoin/x-www-form/urlencoded
+    Content-type: application/x-www-form-urlencoded
 
 body
 
