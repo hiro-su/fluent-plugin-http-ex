@@ -28,11 +28,11 @@ class ChunkTest
             body = JSON.parse(body.chomp).to_msgpack
             body = "#{body}#{body}#{body}"
             size = body.size + 1
-            head = "PUT /ms/dagrin.test HTTP/1.1\r\nUser-Agent: curl/7.28.0\r\nHost: localhost:5000\r\nAccept: */*\r\nContent-type: application/x-msgpack\r\nTransfer-Encoding: chunked\r\nConnection: Keep-Alive\r\nExpect: 100-continue\r\n\r\n#{size.to_s(16)}\r\n#{body}\n\r\n0\r\n\r\n"
+            head = "PUT /ms/test.tag.here HTTP/1.1\r\nUser-Agent: curl/7.28.0\r\nHost: localhost:5000\r\nAccept: */*\r\nContent-type: application/x-msgpack\r\nTransfer-Encoding: chunked\r\nConnection: Keep-Alive\r\nExpect: 100-continue\r\n\r\n#{size.to_s(16)}\r\n#{body}\n\r\n0\r\n\r\n"
           when /json/
             body = "#{body}\n#{body}\n#{body}"
             size = body.size + 1
-            head = "PUT /js/dagrin.test HTTP/1.1\r\nUser-Agent: curl/7.28.0\r\nHost: localhost:5000\r\nAccept: */*\r\nContent-type: application/json\r\nTransfer-Encoding: chunked\r\nConnection: Keep-Alive\r\nExpect: 100-continue\r\n\r\n#{size.to_s(16)}\r\n#{body}\n\r\n0\r\n\r\n"
+            head = "PUT /js/test.tag.here HTTP/1.1\r\nUser-Agent: curl/7.28.0\r\nHost: localhost:5000\r\nAccept: */*\r\nContent-type: application/json\r\nTransfer-Encoding: chunked\r\nConnection: Keep-Alive\r\nExpect: 100-continue\r\n\r\n#{size.to_s(16)}\r\n#{body}\n\r\n0\r\n\r\n"
           end
           i += 1
           stdin.puts head
