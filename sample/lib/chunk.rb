@@ -17,26 +17,35 @@ class ChunkTest
       @term = true
     }
 
+    req = ->x{->y{->size{->body{
+      "PUT /#{x}/test.tag.here HTTP/1.1\r\nUser-Agent: curl/7.28.0\r\nHost: localhost:5000\r\nAccept: */*\r\nContent-type: application/#{y}\r\nTransfer-Encoding: chunked\r\nConnection: Keep-Alive\r\nExpect: 100-continue\r\n\r\n#{size.to_s(16)}\r\n#{body}\n\r\n0\r\n\r\n"
+    }}}}
     Open3.popen3("#{@cmd} #{@host} #{@port}") do |stdin, stdout, stderr, wait_thr|
       begin
         i = 0
         loop do
           break if @term
-          body = %Q({"test":"hoge", "data":"data#{i}"})
-          case @mode
-          when /msgpack/
-            body = JSON.parse(body.chomp).to_msgpack
-            body = "#{body}#{body}#{body}"
-            size = body.size + 1
-            head = "PUT /ms/test.tag.here HTTP/1.1\r\nUser-Agent: curl/7.28.0\r\nHost: localhost:5000\r\nAccept: */*\r\nContent-type: application/x-msgpack\r\nTransfer-Encoding: chunked\r\nConnection: Keep-Alive\r\nExpect: 100-continue\r\n\r\n#{size.to_s(16)}\r\n#{body}\n\r\n0\r\n\r\n"
-          when /json/
-            body = "#{body}\n#{body}\n#{body}"
-            size = body.size + 1
-            head = "PUT /js/test.tag.here HTTP/1.1\r\nUser-Agent: curl/7.28.0\r\nHost: localhost:5000\r\nAccept: */*\r\nContent-type: application/json\r\nTransfer-Encoding: chunked\r\nConnection: Keep-Alive\r\nExpect: 100-continue\r\n\r\n#{size.to_s(16)}\r\n#{body}\n\r\n0\r\n\r\n"
+          rs, ws, _ = IO.select([stdout, stderr], [stdin])
+          rs.each do |r|
+            r.readpartial(4096)
           end
-          i += 1
-          stdin.puts head
-          sleep 0.5
+          ws.each do |w|
+            body = %Q({"test":"hoge", "data":"data#{i}"})
+            case @mode
+            when /msgpack/
+              body = JSON.parse(body.chomp).to_msgpack
+              body = "#{body}#{body}#{body}"
+              size = body.size + 1
+              head = req["ms"]["x-msgpack"][size][body]
+            when /json/
+              body = "#{body}\n#{body}\n#{body}"
+              size = body.size + 1
+              head = req["js"]["json"][size][body]
+            end
+            i += 1
+            w.puts head
+            sleep 0.1
+          end
         end
       ensure
         stdin.close

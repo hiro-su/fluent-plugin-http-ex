@@ -1,14 +1,16 @@
 require './lib/application'
 require './lib/chunk'
+host = 'localhost'
+port = 8888
 mode = ARGV[0] || 'app'
 case mode
 when  /chunk/
-  app = ChunkTest.new('localhost', 8888, "msgpack")
+  app = ChunkTest.new(host, port, "msgpack")
   app.run
 when /app/
   app = HttpInputEX::Application.new(
-    host: "localhost",
-    port: 8888,
+    host: host,
+    port: port,
     json_file: File.join(File.dirname(__FILE__),"json/sample.json")
   )
   # json
