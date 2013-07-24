@@ -30,24 +30,23 @@ class ChunkTest
           reader, writer = stdout, stdin
           monitor = @selector.register(reader, :r)
           monitor.value = proc { puts monitor.io.read_nonblock(4096) }
-            body = %Q({"test":"hoge", "data":"data#{i}"})
-            case @mode
-            when /msgpack/
-              body = JSON.parse(body.chomp).to_msgpack
-              body = "#{body}#{body}#{body}"
-              size = body.size
-              head = req["ms"]["x-msgpack"][size][body]
-            when /json/
-              body = "#{body}\n#{body}\n#{body}"
-              size = body.size
-              head = req["js"]["json"][size][body]
-            end
-            i += 1
-            writer << head
-            @selector.select { |m| m.value.call }
-            @selector.deregister(reader)
-            sleep 1
-          #end
+          body = %Q({"test":"hoge", "data":"data#{i}"})
+          case @mode
+          when /msgpack/
+            body = JSON.parse(body.chomp).to_msgpack
+            body = "#{body}#{body}#{body}"
+            size = body.size
+            head = req["ms"]["x-msgpack"][size][body]
+          when /json/
+            body = "#{body}\n#{body}\n#{body}"
+            size = body.size
+            head = req["js"]["json"][size][body]
+          end
+          i += 1
+          writer << head
+          @selector.select { |m| m.value.call }
+          @selector.deregister(reader)
+          sleep 1
         end
       ensure
         stdin.close
