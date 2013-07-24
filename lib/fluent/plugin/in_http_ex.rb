@@ -112,7 +112,7 @@ class ExHttpInput < HttpInput
         record.each {|line| Engine.emit(tag, time, line) }
 
       elsif params['msgpack-chunk']
-        msgpack_each(record.chomp) do |v|
+        msgpack_each(record) do |v|
           v.each {|line| Engine.emit(tag, time, line) } 
         end
       
@@ -219,7 +219,7 @@ class ExHttpInput < HttpInput
       header.each_pair {|k,v|
         data << "#{k}: #{v}\r\n"
       }
-      #data << "\r\n"
+      data << "\r\n"
       write data
 
       write body

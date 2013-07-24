@@ -1,4 +1,7 @@
 source 'https://rubygems.org'
 
-# Specify your gem's dependencies in fluent-plugin-http-ex.gemspec
-gemspec
+gem "fluentd"
+
+group :test do
+  gem "nio4r"
+end
