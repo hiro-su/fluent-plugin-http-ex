@@ -55,21 +55,21 @@ class ExHttpInput < HttpInput
       @thread = Thread.new(&method(:run))
     end
   end
-
+  
   def on_request(path_info, params)
-    $log.debug "#{params["REMOTE_ADDR"]}, path_info: #{path_info}"
+    $log.debug "remote_addr: #{params["REMOTE_ADDR"]}, path_info: #{path_info}"
     begin
       path = path_info[1..-1] # remove /
       resource, tag = path.split('/')
       tag ||= resource
 
-      if js = params['json'] || js = params['json-list']
+      if js = params['json']
         record = JSON.parse(js)
 
-      elsif ms = params['msgpack']|| ms = params['msgpack-list']
+      elsif ms = params['msgpack']
         record = MessagePack::unpack(ms)
 
-      elsif chunk = params['json-chunk'] || chunk = params['msgpack-chunk']
+      elsif chunk = params['chunked']
         record = chunk
 
       else
@@ -88,7 +88,8 @@ class ExHttpInput < HttpInput
 
     # TODO server error
     begin
-      if params['json-list']
+      case params["resource"]
+      when :js
         record.each do |v|
           line = begin
             JSON.parse(v)
@@ -98,24 +99,9 @@ class ExHttpInput < HttpInput
           Engine.emit(tag, time, line)
         end
 
-      elsif params['json-chunk']
-        record.split("\n").each do |v|
-          line = begin
-            JSON.parse(v)
-          rescue TypeError
-            v #hash
-          end
-          Engine.emit(tag, time, line)
-        end
-
-      elsif params['msgpack-list'] 
+      when :ms
         record.each {|line| Engine.emit(tag, time, line) }
 
-      elsif params['msgpack-chunk']
-        msgpack_each(record) do |v|
-          v.each {|line| Engine.emit(tag, time, line) } 
-        end
-      
       else
         Engine.emit(tag, time, record)
       end
@@ -127,16 +113,86 @@ class ExHttpInput < HttpInput
     return ["200 OK", {'Content-type'=>'text/plain'}, ""]
   end
 
-  def msgpack_each(v)
-    u = MessagePack::Unpacker.new
-    u.feed(v)
-    yield u
-  end
-
   class ExHandler < Handler
     def on_close
       $log.debug "close #{@remote_addr}:#{@remote_port}"
       super
+    end
+
+    def on_headers_complete(headers)
+      expect = nil
+      size = nil
+      if @parser.http_version == [1, 1]
+        @keep_alive = true
+      else
+        @keep_alive = false
+      end
+      @env = {}
+      headers.each_pair {|k,v|
+        @env["HTTP_#{k.gsub('-','_').upcase}"] = v
+        case k
+        when /Expect/i
+          expect = v
+        when /Content-Length/i
+          size = v.to_i
+        when /Content-Type/i
+          @content_type = v
+        when /Connection/i
+          if v =~ /close/i
+            @keep_alive = false
+          elsif v =~ /Keep-alive/i
+            @keep_alive = true
+          end
+        when /Transfer-Encoding/i
+          if v =~ /chunked/i
+            @chunked = true
+          end
+        end
+      }
+      if expect
+        if expect == '100-continue'
+          if !size || size < @body_size_limit
+            send_response_nobody("100 Continue", {})
+          else
+            send_response_and_close("413 Request Entity Too Large", {}, "Too large")
+          end
+        else
+          send_response_and_close("417 Expectation Failed", {}, "")
+        end
+      end
+    end
+
+    def on_body(chunk)
+      if @chunked && @content_type =~ /application\/x-msgpack/i
+        m = method(:on_read_msgpack)
+        @u = MessagePack::Unpacker.new
+        (class << self; self; end).module_eval do
+          define_method(:on_body, m)
+        end
+        m.call(chunk)
+      else
+        if @body.bytesize + chunk.bytesize > @body_size_limit
+          unless closing?
+            send_response_and_close("413 Request Entity Too Large", {}, "Too large")
+          end
+          return
+        end
+        @body << chunk
+      end
+    end
+
+    def on_read_msgpack(data)
+      params = WEBrick::HTTPUtils.parse_query(@parser.query_string)
+      path_info = @parser.request_path
+      @u.feed_each(data) do |obj|
+        params["chunked"] = obj
+        params["REMOTE_ADDR"] = @remote_addr
+        @callback.call(path_info, params)
+      end
+    rescue
+      $log.error "on_read_msgpack error: #{$!.to_s}"
+      $log.error_backtrace
+      close
     end
 
     def on_message_complete
@@ -147,35 +203,33 @@ class ExHttpInput < HttpInput
       params = WEBrick::HTTPUtils.parse_query(@parser.query_string)
       path_info = @parser.request_path
 
-      case @env['HTTP_TRANSFER_ENCODING']
-      when /^chunked/
-        params = check_content_type(params, @content_type, @body, path_info, 'chunked')
-      else
-        params = check_content_type(params, @content_type, @body, path_info)
-      end
-
+      params = check_content_type(params, @content_type, @body, path_info)
       params.merge!(@env)
       @env.clear
 
-      code, header, body = *@callback.call(path_info, params)
-      body = body.to_s
+      unless @chunked
+        code, header, body = *@callback.call(path_info, params)
+        body = body.to_s
 
-      if @keep_alive
-        header['Connection'] = 'Keep-Alive'
-        send_response(code, header, body)
+        if @keep_alive
+          header['Connection'] = 'Keep-Alive'
+          send_response(code, header, body)
+        else
+          send_response_and_close(code, header, body)
+        end
       else
-        send_response_and_close(code, header, body)
+        send_response_nobody("200 OK", {})
       end
     end
 
-    def check_content_type(params, content_type, body, path_info, chunked=nil)
-      set_params = lambda do |type, key|
+    def check_content_type(params, content_type, body, path_info)
+      set_params = lambda do |key|
         if content_type =~ /^application\/x-www-form-urlencoded/
           params.update WEBrick::HTTPUtils.parse_query(body)
         elsif content_type =~ /^multipart\/form-data; boundary=(.+)/
           boundary = WEBrick::HTTPUtils.dequote($1)
           params.update WEBrick::HTTPUtils.parse_form_data(body, boundary)
-        elsif content_type =~ /^application\/#{type}/
+        elsif content_type =~ /^application\/(json|x-msgpack)/
           params[key] = body
         end
       end
@@ -185,24 +239,18 @@ class ExHttpInput < HttpInput
       tag ||= resource
       case resource
       when /^j$/
-        set_params.call('json','json')
+        set_params.call('json')
       when /^m$/
-        set_params.call('x-msgpack','msgpack')
+        set_params.call('msgpack')
       when /^js$/
-        if chunked
-          set_params.call('json','json-chunk')
-        else
-          set_params.call('json','json-list')
-        end
+        set_params.call('json')
+        params["resource"] = :js
       when /^ms$/
-        if chunked
-          set_params.call('x-msgpack','msgpack-chunk')
-        else
-          set_params.call('x-msgpack','msgpack-list')
-        end
+        set_params.call('msgpack')
+        params["resource"] = :ms
       when tag
-        set_params.call('json','json')
-        set_params.call('x-msgpack','msgpack')
+        set_params.call('json')
+        set_params.call('x-msgpack')
       end
 
       params
@@ -210,21 +258,6 @@ class ExHttpInput < HttpInput
       $log.error ex
       $log.error ex.backtrace * "\n"
     end
-
-    def send_response(code, header, body)
-      header['Content-length'] ||= body.bytesize
-      header['Content-type'] ||= 'text/plain'
-
-      data = %[HTTP/1.1 #{code}\r\n]
-      header.each_pair {|k,v|
-        data << "#{k}: #{v}\r\n"
-      }
-      data << "\r\n"
-      write data
-
-      write body
-    end
-
   end
 end
 

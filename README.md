@@ -32,6 +32,7 @@ Base URL
     http://localhost:8888
 
 ### single json
+####  case 1
 
 resource
 
@@ -41,17 +42,36 @@ header
 
     Content-type: application/x-www-form-urlencoded
 
-
 body
 
     json=<json data>
 
 sample
 
-    $ curl -X POST -d 'json=[{"action":"login","user":2}]' \
+    $ curl -X POST -d 'json={"action":"login","user":2}' \
+        http://localhost:8888/j/test.tag.here;
+
+#### case 2
+
+resource
+
+    j
+
+header
+
+    Content-type: application/json
+
+body
+
+    <json data>
+
+sample
+
+    $ curl -X POST -H 'Content-Type: application/json' -d '{"action":"login","user":2}' \
         http://localhost:8888/j/test.tag.here;
 
 ### json list
+#### case 1
 
 resource
 
@@ -63,14 +83,14 @@ header
 
 body
 
-    json-list=<json list data>
+    json=<json list data>
 
 sample
 
-    $ curl -X POST -d 'json-list=[{"action":"login","user":2},{"action":"login","user":2}]' \
+    $ curl -X POST -d 'json=[{"action":"login","user":2},{"action":"login","user":2}]' \
         http://localhost:8888/js/test.tag.here;
 
-### json chunked
+#### case 2
 
 resource
 
@@ -79,25 +99,18 @@ resource
 header
 
     Content-type: application/json
-    Transfer-Encoding: chunked
 
 body
 
-    <json chunk data of \n split>
+    json=<json list data>
 
 sample
 
-    $ vi test.txt
-    {"action":"login","user":2}
-    {"action":"login","user":2}
-    {"action":"login","user":2}
-    .
-    .
-    .
-    
-    $ curl -s -T "test.txt" -H 'Content-type: application/json' --header "Transfer-Encoding: chunked"  http://localhost:8888/js/test.tag.here;
+    $ curl -X POST -d '[{"action":"login","user":2},{"action":"login","user":2}]' \
+        http://localhost:8888/js/test.tag.here;
 
 ### msgpack
+#### case 1
 
 resource
 
@@ -109,10 +122,26 @@ header
 
 body
 
-    msgpack=<msgpack data>
+    msgpack=<hash msgpack data>
              hash.to_msgpack
 
+#### case2
+
+resource
+
+    m
+
+header
+
+    Content-type: application/x-msgpack
+
+body
+
+    <msgpack data>
+     hash.to_msgpack
+
 ### msgpack list
+#### case 1
 
 resource
 
@@ -124,8 +153,23 @@ header
 
 body
 
-    msgpack-list=<msgpack list data>
-                  [hash,hash,hash].to_msgpack
+    msgpack=<msgpack list data>
+             [hash,hash,hash].to_msgpack
+
+#### case 2
+
+resource
+
+    ms
+
+header
+
+    Content-type: application/x-msgpack
+
+body
+
+    msgpack=<msgpack list data>
+             [hash,hash,hash].to_msgpack
 
 ### msgpack chunked
 
@@ -141,7 +185,7 @@ header
 body
 
     <msgpack chunk data>
-     "#{hash.to_msgpack}#{hash.to_msgpack}"
+     "#{hash.to_msgpack}#{hash.to_msgpack}"...
 
 
 Each event in the list will be sent to your output plugins as an individual
