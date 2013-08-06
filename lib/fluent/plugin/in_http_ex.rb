@@ -66,7 +66,7 @@ class ExHttpInput < HttpInput
       if js = params['json']
         record = JSON.parse(js)
 
-      elsif ms = params['msgpack']
+      elsif ms = params['x-msgpack']
         record = MessagePack::unpack(ms)
 
       elsif chunk = params['chunked']
@@ -223,34 +223,22 @@ class ExHttpInput < HttpInput
     end
 
     def check_content_type(params, content_type, body, path_info)
-      set_params = lambda do |key|
-        if content_type =~ /^application\/x-www-form-urlencoded/
-          params.update WEBrick::HTTPUtils.parse_query(body)
-        elsif content_type =~ /^multipart\/form-data; boundary=(.+)/
-          boundary = WEBrick::HTTPUtils.dequote($1)
-          params.update WEBrick::HTTPUtils.parse_form_data(body, boundary)
-        elsif content_type =~ /^application\/(json|x-msgpack)/
-          params[key] = body
-        end
-      end
-
       path = path_info[1..-1] # remove /
-      resource, tag = path.split('/')
-      tag ||= resource
+      resource, _ = path.split('/')
       case resource
-      when /^j$/
-        set_params.call('json')
-      when /^m$/
-        set_params.call('msgpack')
       when /^js$/
-        set_params.call('json')
         params["resource"] = :js
       when /^ms$/
-        set_params.call('msgpack')
         params["resource"] = :ms
-      when tag
-        set_params.call('json')
-        set_params.call('x-msgpack')
+      end
+
+      if content_type =~ /^application\/x-www-form-urlencoded/
+        params.update WEBrick::HTTPUtils.parse_query(body)
+      elsif content_type =~ /^multipart\/form-data; boundary=(.+)/
+        boundary = WEBrick::HTTPUtils.dequote($1)
+        params.update WEBrick::HTTPUtils.parse_form_data(body, boundary)
+      elsif content_type =~ /^application\/(json|x-msgpack)/
+        params[$1] = body
       end
 
       params

@@ -2,7 +2,7 @@
 
 ## Overview
 
-This plugin takes JSON or MessagePack of events as input via a single or chunked
+This plugin takes JSON or MessagePack of events as input via a single, list or chunked
 HTTP POST request and emits each as an individual event to your output plugins.
 If you're sending a lot of events this simplifies your client's code and eliminates
 the overhead of creating a lot of brief connections.
@@ -36,7 +36,7 @@ Base URL
 
 resource
 
-    j
+    j or null
 
 header
 
@@ -51,11 +51,14 @@ sample
     $ curl -X POST -d 'json={"action":"login","user":2}' \
         http://localhost:8888/j/test.tag.here;
 
+    $ curl -X POST -d 'json={"action":"login","user":2}' \
+        http://localhost:8888/test.tag.here;
+
 #### case 2
 
 resource
 
-    j
+    j or null
 
 header
 
@@ -69,6 +72,9 @@ sample
 
     $ curl -X POST -H 'Content-Type: application/json' -d '{"action":"login","user":2}' \
         http://localhost:8888/j/test.tag.here;
+
+    $ curl -X POST -H 'Content-Type: application/json' -d '{"action":"login","user":2}' \
+        http://localhost:8888/test.tag.here;
 
 ### json list
 #### case 1
@@ -114,7 +120,7 @@ sample
 
 resource
 
-    m
+    m or null
 
 header
 
@@ -129,7 +135,7 @@ body
 
 resource
 
-    m
+    m or null
 
 header
 
