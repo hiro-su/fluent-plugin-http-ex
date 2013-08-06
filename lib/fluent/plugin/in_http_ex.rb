@@ -63,14 +63,14 @@ class ExHttpInput < HttpInput
       resource, tag = path.split('/')
       tag ||= resource
 
-      if js = params['json']
+      if chunk = params['chunked']
+        record = chunk 
+        
+      elsif js = params['json']
         record = JSON.parse(js)
 
-      elsif ms = params['x-msgpack']
+      elsif ms = params['x-msgpack'] || ms = params['msgpack']
         record = MessagePack::unpack(ms)
-
-      elsif chunk = params['chunked']
-        record = chunk
 
       else
         raise "'json' or 'msgpack' parameter is required"
@@ -218,7 +218,7 @@ class ExHttpInput < HttpInput
           send_response_and_close(code, header, body)
         end
       else
-        send_response_nobody("200 OK", {})
+        send_response("200 OK", {'Content-type'=>'text/plain', 'Connection'=>'Keep-Alive'}, "")
       end
     end
 
