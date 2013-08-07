@@ -17,7 +17,7 @@ HTTP input plugin. Example:
       port 8888
       bind 0.0.0.0
       body_size_limit 32m
-      keepalive_timeout 300s
+      keepalive_timeout 300s #0s is not timeout
     </source>
 
 Like the HTTP input plugin, the tag is determined by the URL used, which means 
@@ -31,7 +31,7 @@ Base URL
 
     http://localhost:8888
 
-### single json
+### json
 ####  case 1
 
 resource
@@ -196,6 +196,79 @@ body
 
 Each event in the list will be sent to your output plugins as an individual
 event. 
+
+## Performance
+
+Comparison of in_http and in_http_ex.
+send 10,000 messages.
+
+
+machine spec
+
+    Mac OS X 10.8.2
+    1.8 GHz Intel Core i5
+    8 GB 1600 MHz DDR3
+
+### in_http
+
+json
+
+    $ time ruby examples/json.rb
+    
+    real    2m27.480s
+    user    0m7.252s
+    sys     0m4.438s
+
+msgpack
+
+    $ time ruby examples/msgpack.rb
+    
+    real    2m36.408s
+    user    0m8.249s
+    sys     0m4.441s
+
+### in_http_ex
+
+json
+
+    $ time ruby examples/json.rb
+    
+    real    2m30.639s
+    user    0m7.195s
+    sys     0m4.686s
+
+msgpack
+
+    $ time ruby examples/msgpack.rb
+    
+    real    2m28.442s
+    user    0m7.126s
+    sys     0m4.324s
+
+json list
+
+    $ time ruby examples/json_list.rb
+    
+    real    0m18.179s
+    user    0m0.872s
+    sys     0m0.477s
+
+msgpack list
+
+    $ time ruby examples/msgpack_list.rb
+    
+    real    0m13.787s
+    user    0m0.908s
+    sys     0m0.470s
+
+msgpack chunked
+
+    $ time ruby examples/chunked.rb
+    
+    real    0m1.584s
+    user    0m0.244s
+    sys     0m0.107s
+
 
 ## Copyright
 
