@@ -263,7 +263,7 @@ msgpack list
 
 msgpack chunked
 
-    $ time ruby examples/chunked.rb
+    $ time ruby examples/nc_chunked.rb
     
     real    0m1.584s
     user    0m0.244s
