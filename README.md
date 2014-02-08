@@ -1,4 +1,4 @@
-# Fluent::Plugin::Http::Ex
+# Fluent::Plugin::Http::Ex, a plugin for [Fluentd](http://fluentd.org)
 
 ## Overview
 
