@@ -46,7 +46,7 @@ class ExHttpInput < HttpInput
     detach_multi_process do
       Input.new.start
       @km = KeepaliveManager.new(@keepalive_timeout)
-      @lsock = Coolio::TCPServer.new(lsock, nil, ExHandler, @km, method(:on_request), @body_size_limit)
+      @lsock = Coolio::TCPServer.new(lsock, nil, ExHandler, @km, method(:on_request), @body_size_limit, $log)
 
       @loop = Coolio::Loop.new
       @loop.attach(@km)
