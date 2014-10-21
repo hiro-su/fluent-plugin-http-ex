@@ -182,8 +182,8 @@ class ExHttpInput < HttpInput
     end
 
     def on_read_msgpack(data)
-      params = WEBrick::HTTPUtils.parse_query(@parser.query_string)
-      path_info = @parser.request_path
+      path_info, query_string = @parser.request_url.split("?", 2)
+      params = WEBrick::HTTPUtils.parse_query(query_string)
       @u.feed_each(data) do |obj|
         params["chunked"] = obj
         params["REMOTE_ADDR"] = @remote_addr
@@ -200,8 +200,8 @@ class ExHttpInput < HttpInput
 
       @env['REMOTE_ADDR'] = @remote_addr
 
-      params = WEBrick::HTTPUtils.parse_query(@parser.query_string)
-      path_info = @parser.request_path
+      path_info, query_string = @parser.request_url.split("?", 2)
+      params = WEBrick::HTTPUtils.parse_query(query_string)
 
       params = check_content_type(params, @content_type, @body, path_info)
       params.merge!(@env)
