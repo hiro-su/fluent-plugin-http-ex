@@ -46,7 +46,9 @@ class ExHttpInput < HttpInput
     detach_multi_process do
       Input.new.start
       @km = KeepaliveManager.new(@keepalive_timeout)
-      @lsock = Coolio::TCPServer.new(lsock, nil, ExHandler, @km, method(:on_request), @body_size_limit, nil, $log)
+      @lsock = Coolio::TCPServer.new(lsock, nil, ExHandler, @km, method(:on_request),
+                                     @body_size_limit, nil, $log,
+                                     @cors_allow_origins)
 
       @loop = Coolio::Loop.new
       @loop.attach(@km)
@@ -197,6 +199,17 @@ class ExHttpInput < HttpInput
 
     def on_message_complete
       return if closing?
+
+      # CORS check
+      # ==========
+      # For every incoming request, we check if we have some CORS
+      # restrictions and white listed origins through @cors_allow_origins.
+      unless @cors_allow_origins.nil?
+        unless @cors_allow_origins.include?(@origin)
+          send_response_and_close("403 Forbidden", {'Connection' => 'close'}, "")
+          return
+        end
+      end
 
       @env['REMOTE_ADDR'] = @remote_addr
 
