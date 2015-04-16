@@ -4,7 +4,7 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 
 Gem::Specification.new do |spec|
   spec.name          = "fluent-plugin-http-ex"
-  spec.version       = "0.0.2"
+  spec.version       = "0.0.3"
   spec.authors       = ["hiro-su"]
   spec.email         = ["h.sugipon@gmail.com"]
   spec.description   = %q{fluent plugin to accept multiple json/msgpack events in HTTP request}
@@ -16,7 +16,6 @@ Gem::Specification.new do |spec|
   spec.test_files    = spec.files.grep(%r{^(test|spec|features)/})
   spec.require_paths = ["lib"]
 
-  spec.add_development_dependency "fluentd"
-  spec.add_development_dependency "rake"
-  spec.add_runtime_dependency "fluentd"
+  spec.add_runtime_dependency "fluentd", "~> 0.12.0" 
+  spec.add_development_dependency "rake", "~> 0.9.2"
 end
